@@ -1,29 +1,20 @@
 <?php
-require_once __DIR__ . '/includes/auth.php';
-
-$user = currentUser();
+$pageTitle = 'Home';
+require_once __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Foodies</title>
-</head>
-<body>
-    <h1>Foodies</h1>
 
-    <?php if ($user): ?>
-        <p>Signed in as <?= e($user['name']) ?> (<?= e($user['role']) ?>)</p>
-        <p><a href="/customer/restaurants.php">Browse restaurants</a></p>
-        <p><a href="/customer/orders.php">Your orders</a></p>
+<div class="p-5 mb-4 bg-white rounded-3 shadow-sm">
+    <h1 class="display-5 fw-bold">Foodies</h1>
+    <p class="lead text-muted">Order from restaurants near you.</p>
 
-        <?php if ($user['role'] === 'owner'): ?>
-            <p><a href="/owner/dashboard.php">Owner dashboard</a></p>
-        <?php endif; ?>
-
-        <p><a href="/auth/logout.php">Log out</a></p>
+    <?php if ($currentUser): ?>
+        <p>Signed in as <strong><?= e($currentUser['name']) ?></strong>
+           <span class="badge bg-secondary"><?= e($currentUser['role']) ?></span></p>
+        <a href="/customer/restaurants.php" class="btn btn-primary">Browse restaurants</a>
     <?php else: ?>
-        <p><a href="/auth/login.php">Log in</a> or <a href="/auth/register.php">register</a></p>
+        <a href="/auth/register.php" class="btn btn-primary">Get started</a>
+        <a href="/auth/login.php" class="btn btn-outline-secondary">Log in</a>
     <?php endif; ?>
-</body>
-</html>
+</div>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>

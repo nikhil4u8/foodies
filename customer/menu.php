@@ -45,41 +45,44 @@ $stmt = $pdo->prepare(
 );
 $stmt->execute([$restaurant['id']]);
 $items = $stmt->fetchAll();
+
+$pageTitle = $restaurant['name'];
+require_once __DIR__ . '/../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title><?= e($restaurant['name']) ?> — Foodies</title>
-</head>
-<body>
-    <h1><?= e($restaurant['name']) ?></h1>
-    <p><?= e($restaurant['description'] ?? '') ?></p>
-    <p><a href="/customer/restaurants.php">All restaurants</a>
-       <?php if ($user): ?>| <a href="/customer/cart.php">Food bucket</a><?php endif; ?></p>
 
-    <?php if ($notice): ?>
-        <p style="color:green"><?= e($notice) ?></p>
-    <?php endif; ?>
+<div class="mb-4">
+    <h1 class="fw-bold"><?= e($restaurant['name']) ?></h1>
+    <p class="text-muted"><?= e($restaurant['description'] ?? '') ?></p>
+    <a href="/customer/restaurants.php" class="btn btn-sm btn-outline-secondary">All restaurants</a>
+</div>
 
-    <?php if (!$items): ?>
-        <p>No dishes available.</p>
-    <?php else: ?>
+<?php if ($notice): ?>
+    <div class="alert alert-success"><?= e($notice) ?></div>
+<?php endif; ?>
+
+<?php if (!$items): ?>
+    <div class="alert alert-info">No dishes available.</div>
+<?php else: ?>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
         <?php foreach ($items as $item): ?>
-            <div style="border:1px solid #ccc; padding:10px; margin:10px 0">
-                <?php if (!empty($item['image'])): ?>
-                    <img src="/assets/uploads/<?= e($item['image']) ?>" alt="" style="max-width:150px">
-                <?php endif; ?>
-                <h3><?= e($item['name']) ?></h3>
-                <p><?= e($item['description'] ?? '') ?></p>
-                <p>₹<?= number_format((float) $item['price'], 2) ?></p>
-
-                <form method="post">
-                    <input type="hidden" name="menu_item_id" value="<?= (int) $item['id'] ?>">
-                    <button type="submit">Add to bucket</button>
-                </form>
+            <div class="col">
+                <div class="card h-100 dish-card">
+                    <?php if (!empty($item['image'])): ?>
+                        <img src="/assets/uploads/<?= e($item['image']) ?>" class="card-img-top" alt="">
+                    <?php endif; ?>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title"><?= e($item['name']) ?></h5>
+                        <p class="card-text text-muted small"><?= e($item['description'] ?? '') ?></p>
+                        <p class="fw-bold mt-auto">₹<?= number_format((float) $item['price'], 2) ?></p>
+                        <form method="post">
+                            <input type="hidden" name="menu_item_id" value="<?= (int) $item['id'] ?>">
+                            <button class="btn btn-sm btn-primary w-100">Add to bucket</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         <?php endforeach; ?>
-    <?php endif; ?>
-</body>
-</html>
+    </div>
+<?php endif; ?>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -1,0 +1,12 @@
+.dish-card img {
+    height: 180px;
+    object-fit: cover;
+}
+
+.dish-card {
+    transition: box-shadow 0.15s ease;
+}
+
+.dish-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
