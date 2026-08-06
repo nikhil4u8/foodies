@@ -14,7 +14,9 @@ $user = currentUser();
 
     <?php if ($user): ?>
         <p>Signed in as <?= e($user['name']) ?> (<?= e($user['role']) ?>)</p>
-<p><a href="/customer/restaurants.php">Browse restaurants</a></p>
+        <p><a href="/customer/restaurants.php">Browse restaurants</a></p>
+        <p><a href="/customer/orders.php">Your orders</a></p>
+
         <?php if ($user['role'] === 'owner'): ?>
             <p><a href="/owner/dashboard.php">Owner dashboard</a></p>
         <?php endif; ?>
