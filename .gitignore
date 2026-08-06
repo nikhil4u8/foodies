@@ -1,0 +1,7 @@
+config/db_credentials.php
+assets/uploads/*
+!assets/uploads/.gitkeep
+.vscode/
+.idea/
+*.log
+.DS_Store
