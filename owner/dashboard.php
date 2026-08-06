@@ -23,6 +23,7 @@ $restaurant = $stmt->fetch();
         <h2><?= e($restaurant['name']) ?></h2>
         <p><?= e($restaurant['description'] ?? '') ?></p>
         <p><a href="/owner/menu.php">Manage menu</a></p>
+        <p><a href="/owner/orders.php">View orders</a></p>
     <?php else: ?>
         <p>You haven't set up a restaurant yet.</p>
         <p><a href="/owner/restaurant_form.php">Create your restaurant</a></p>
