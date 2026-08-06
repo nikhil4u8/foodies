@@ -38,31 +38,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $imageName   = $item['image'] ?? null;
 
     if ($name === '') {
-        $errors[] = 'Dish name is required.';
+        $errors[] = 'Give the dish a name.';
     }
     if (!is_numeric($price) || (float) $price < 0) {
-        $errors[] = 'Price must be a positive number.';
+        $errors[] = 'Enter a price as a number, without the currency symbol.';
     }
 
     if (!empty($_FILES['image']['name'])) {
         $upload = $_FILES['image'];
 
         if ($upload['error'] !== UPLOAD_ERR_OK) {
-            $errors[] = 'Image upload failed.';
+            $errors[] = 'The photo didn\'t upload. Try again.';
         } elseif ($upload['size'] > 2 * 1024 * 1024) {
-            $errors[] = 'Image must be under 2 MB.';
+            $errors[] = 'That photo is over 2 MB. Use a smaller one.';
         } else {
             $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
             $mime    = mime_content_type($upload['tmp_name']);
 
             if (!isset($allowed[$mime])) {
-                $errors[] = 'Image must be JPEG, PNG or WebP.';
+                $errors[] = 'Photos must be JPEG, PNG or WebP.';
             } else {
                 $imageName = bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
                 $target    = __DIR__ . '/../assets/uploads/' . $imageName;
 
                 if (!move_uploaded_file($upload['tmp_name'], $target)) {
-                    $errors[] = 'Could not save the image.';
+                    $errors[] = 'Couldn\'t save the photo. Try again.';
                     $imageName = $item['image'] ?? null;
                 }
             }
@@ -94,45 +94,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+
+$pageTitle = $item ? 'Edit dish' : 'Add dish';
+require_once __DIR__ . '/../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title><?= $item ? 'Edit' : 'Add' ?> dish — Foodies</title>
-</head>
-<body>
-    <h1><?= $item ? 'Edit' : 'Add' ?> dish</h1>
+
+<div style="max-width:560px">
+    <h1 class="fw-semibold mb-1"><?= $item ? 'Edit dish' : 'Add a dish' ?></h1>
+    <p class="text-muted small mb-4"><?= e($restaurant['name']) ?></p>
 
     <?php foreach ($errors as $error): ?>
-        <p style="color:crimson"><?= e($error) ?></p>
+        <div class="alert alert-danger py-2 small"><?= e($error) ?></div>
     <?php endforeach; ?>
 
-    <form method="post" enctype="multipart/form-data">
-        <p><input type="text" name="name" placeholder="Dish name"
-                  value="<?= e($item['name'] ?? '') ?>" required></p>
-        <p><textarea name="description" placeholder="Description"><?= e($item['description'] ?? '') ?></textarea></p>
-        <p><input type="text" name="category" placeholder="Category (e.g. Starters)"
-                  value="<?= e($item['category'] ?? '') ?>"></p>
-        <p><input type="number" name="price" step="0.01" min="0" placeholder="Price"
-                  value="<?= e((string) ($item['price'] ?? '')) ?>" required></p>
-        <p>
-            <label>
-                <input type="checkbox" name="is_available"
-                       <?= (!$item || $item['is_available']) ? 'checked' : '' ?>>
-                Available
-            </label>
-        </p>
+    <form method="post" enctype="multipart/form-data" class="card card-body">
+        <div class="mb-3">
+            <label class="form-label" for="name">Dish name</label>
+            <input class="form-control" id="name" type="text" name="name"
+                   value="<?= e($item['name'] ?? '') ?>" required autofocus>
+        </div>
 
-        <?php if (!empty($item['image'])): ?>
-            <p><img src="/assets/uploads/<?= e($item['image']) ?>" alt="" style="max-width:200px"></p>
-        <?php endif; ?>
+        <div class="mb-3">
+            <label class="form-label" for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="2"
+                      placeholder="What's in it?"><?= e($item['description'] ?? '') ?></textarea>
+        </div>
 
-        <p><input type="file" name="image" accept="image/*"></p>
+        <div class="row g-3 mb-3">
+            <div class="col-7">
+                <label class="form-label" for="category">Category</label>
+                <input class="form-control" id="category" type="text" name="category"
+                       placeholder="Starters, Mains, Breads…"
+                       value="<?= e($item['category'] ?? '') ?>">
+            </div>
+            <div class="col-5">
+                <label class="form-label" for="price">Price (₹)</label>
+                <input class="form-control" id="price" type="number" step="0.01" min="0"
+                       name="price" value="<?= e((string) ($item['price'] ?? '')) ?>" required>
+            </div>
+        </div>
 
-        <button type="submit">Save</button>
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="is_available" name="is_available"
+                   <?= (!$item || $item['is_available']) ? 'checked' : '' ?>>
+            <label class="form-check-label small" for="is_available">Available to order</label>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label" for="image">Photo</label>
+            <?php if (!empty($item['image'])): ?>
+                <div class="mb-2">
+                    <img src="/assets/uploads/<?= e($item['image']) ?>" class="rounded"
+                         style="max-width:170px" alt="">
+                </div>
+            <?php endif; ?>
+            <input class="form-control" type="file" id="image" name="image" accept="image/*">
+            <div class="form-text small">
+                JPEG, PNG or WebP, up to 2 MB.<?= !empty($item['image']) ? ' Leave empty to keep the current photo.' : '' ?>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary"><?= $item ? 'Save changes' : 'Add dish' ?></button>
+            <a href="/owner/menu.php" class="btn btn-outline-secondary">Cancel</a>
+        </div>
     </form>
+</div>
 
-    <p><a href="/owner/menu.php">Back to menu</a></p>
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

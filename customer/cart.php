@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
-requireLogin();
+requireRole('customer');
 
 $user = currentUser();
 $pdo  = getDatabaseConnection();
@@ -38,50 +38,57 @@ $total = 0.0;
 foreach ($rows as $row) {
     $total += (float) $row['price'] * (int) $row['quantity'];
 }
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Food bucket — Foodies</title>
-</head>
-<body>
-    <h1>Your food bucket</h1>
-    <p><a href="/customer/restaurants.php">Keep browsing</a></p>
 
-    <?php if (!$rows): ?>
-        <p>Your bucket is empty.</p>
-    <?php else: ?>
-        <table border="1" cellpadding="6">
+$pageTitle = 'Food bucket';
+require_once __DIR__ . '/../includes/header.php';
+?>
+
+<h1 class="fw-bold mb-3">Your food bucket</h1>
+<p><a href="/customer/restaurants.php" class="btn btn-sm btn-outline-secondary">Keep browsing</a></p>
+
+<?php if (!$rows): ?>
+    <div class="alert alert-info">Your bucket is empty.</div>
+<?php else: ?>
+    <table class="table table-striped align-middle bg-white">
+        <thead>
             <tr><th>Dish</th><th>Restaurant</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>
+        </thead>
+        <tbody>
             <?php foreach ($rows as $row): ?>
                 <tr>
                     <td><?= e($row['name']) ?></td>
-                    <td><?= e($row['restaurant_name']) ?></td>
+                    <td class="text-muted"><?= e($row['restaurant_name']) ?></td>
                     <td>₹<?= number_format((float) $row['price'], 2) ?></td>
                     <td>
-                        <form method="post" style="display:inline">
+                        <form method="post" class="d-flex gap-1">
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="cart_item_id" value="<?= (int) $row['id'] ?>">
-                            <input type="number" name="quantity" min="1" style="width:60px"
+                            <input type="number" name="quantity" min="1"
+                                   class="form-control form-control-sm" style="width:70px"
                                    value="<?= (int) $row['quantity'] ?>">
-                            <button type="submit">Update</button>
+                            <button class="btn btn-sm btn-outline-primary">Update</button>
                         </form>
                     </td>
-                    <td>₹<?= number_format((float) $row['price'] * (int) $row['quantity'], 2) ?></td>
+                    <td class="fw-semibold">₹<?= number_format((float) $row['price'] * (int) $row['quantity'], 2) ?></td>
                     <td>
-                        <form method="post" style="display:inline">
+                        <form method="post">
                             <input type="hidden" name="action" value="remove">
                             <input type="hidden" name="cart_item_id" value="<?= (int) $row['id'] ?>">
-                            <button type="submit">Remove</button>
+                            <button class="btn btn-sm btn-outline-danger">Remove</button>
                         </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
-            <tr><th colspan="4">Total</th><th colspan="2">₹<?= number_format($total, 2) ?></th></tr>
-        </table>
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="4" class="text-end">Total</th>
+                <th colspan="2">₹<?= number_format($total, 2) ?></th>
+            </tr>
+        </tfoot>
+    </table>
 
-        <p><a href="/customer/checkout.php">Proceed to checkout</a></p>
-    <?php endif; ?>
-</body>
-</html>
+    <a href="/customer/checkout.php" class="btn btn-primary">Proceed to checkout</a>
+<?php endif; ?>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
-requireLogin();
+requireRole('customer');
 
 $user   = currentUser();
 $pdo    = getDatabaseConnection();
@@ -21,6 +21,13 @@ if (!$rows) {
 }
 
 $restaurantIds = array_unique(array_column($rows, 'restaurant_id'));
+
+$stmt = $pdo->prepare('SELECT id FROM restaurants WHERE id = ? AND owner_id = ?');
+$stmt->execute([(int) $restaurantIds[0], $user['id']]);
+
+if ($stmt->fetch()) {
+    $errors[] = 'You cannot order from your own restaurant.';
+}
 
 if (count($restaurantIds) > 1) {
     $errors[] = 'Your bucket contains dishes from more than one restaurant. Please order from one at a time.';
@@ -77,34 +84,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$errors) {
         }
     }
 }
+
+$pageTitle = 'Checkout';
+require_once __DIR__ . '/../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Checkout — Foodies</title>
-</head>
-<body>
-    <h1>Checkout</h1>
 
-    <?php foreach ($errors as $error): ?>
-        <p style="color:crimson"><?= e($error) ?></p>
-    <?php endforeach; ?>
+<h1 class="fw-bold mb-3">Checkout</h1>
 
-    <ul>
+<?php foreach ($errors as $error): ?>
+    <div class="alert alert-danger"><?= e($error) ?></div>
+<?php endforeach; ?>
+
+<div class="card bg-white mb-4">
+    <ul class="list-group list-group-flush">
         <?php foreach ($rows as $row): ?>
-            <li><?= e($row['name']) ?> × <?= (int) $row['quantity'] ?>
-                — ₹<?= number_format((float) $row['price'] * (int) $row['quantity'], 2) ?></li>
+            <li class="list-group-item d-flex justify-content-between">
+                <span><?= e($row['name']) ?> <span class="text-muted">× <?= (int) $row['quantity'] ?></span></span>
+                <span>₹<?= number_format((float) $row['price'] * (int) $row['quantity'], 2) ?></span>
+            </li>
         <?php endforeach; ?>
+        <li class="list-group-item d-flex justify-content-between fw-bold">
+            <span>Total</span>
+            <span>₹<?= number_format($total, 2) ?></span>
+        </li>
     </ul>
+</div>
 
-    <p><strong>Total: ₹<?= number_format($total, 2) ?></strong></p>
+<form method="post" class="card card-body bg-white">
+    <div class="mb-3">
+        <label class="form-label" for="delivery_address">Delivery address</label>
+        <textarea class="form-control" id="delivery_address" name="delivery_address" rows="3" required></textarea>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary">Place order</button>
+        <a href="/customer/cart.php" class="btn btn-outline-secondary">Back to bucket</a>
+    </div>
+</form>
 
-    <form method="post">
-        <p><textarea name="delivery_address" placeholder="Delivery address" required></textarea></p>
-        <button type="submit">Place order</button>
-    </form>
-
-    <p><a href="/customer/cart.php">Back to bucket</a></p>
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

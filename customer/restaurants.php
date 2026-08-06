@@ -6,7 +6,7 @@ $search = trim($_GET['q'] ?? '');
 
 if ($search !== '') {
     $stmt = $pdo->prepare(
-        'SELECT DISTINCT r.*
+        'SELECT DISTINCT r.*, (SELECT COUNT(*) FROM menu_items mi WHERE mi.restaurant_id = r.id) AS dish_count
            FROM restaurants r
            LEFT JOIN menu_items m ON m.restaurant_id = r.id
           WHERE r.name LIKE :term OR m.name LIKE :term
@@ -14,47 +14,69 @@ if ($search !== '') {
     );
     $stmt->execute([':term' => '%' . $search . '%']);
 } else {
-    $stmt = $pdo->query('SELECT * FROM restaurants ORDER BY name');
+    $stmt = $pdo->query(
+        'SELECT r.*, (SELECT COUNT(*) FROM menu_items mi WHERE mi.restaurant_id = r.id) AS dish_count
+           FROM restaurants r ORDER BY r.name'
+    );
 }
 
 $restaurants = $stmt->fetchAll();
-$user = currentUser();
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Restaurants — Foodies</title>
-</head>
-<body>
-    <h1>Restaurants</h1>
-    <p><a href="/index.php">Home</a>
-       <?php if ($user): ?>| <a href="/customer/cart.php">Food bucket</a><?php endif; ?></p>
 
-    <form method="get">
-        <input type="text" name="q" placeholder="Search restaurants or dishes"
-               value="<?= e($search) ?>">
-        <button type="submit">Search</button>
+$pageTitle = 'Restaurants';
+require_once __DIR__ . '/../includes/header.php';
+?>
+
+<div class="mb-4">
+    <h1 class="fw-semibold mb-1">Kitchens near you</h1>
+    <p class="text-muted mb-3">Search by restaurant or by the dish you're craving.</p>
+
+    <form method="get" class="d-flex gap-2" style="max-width:520px">
+        <input type="search" name="q" class="form-control"
+               placeholder="Butter chicken, biryani, dhaba…" value="<?= e($search) ?>">
+        <button class="btn btn-primary">Search</button>
         <?php if ($search !== ''): ?>
-            <a href="/customer/restaurants.php">Clear</a>
+            <a href="/customer/restaurants.php" class="btn btn-outline-secondary">Clear</a>
         <?php endif; ?>
     </form>
+</div>
 
-    <?php if (!$restaurants): ?>
-        <p><?= $search !== '' ? 'No matches found.' : 'No restaurants yet.' ?></p>
-    <?php else: ?>
-        <ul>
-            <?php foreach ($restaurants as $r): ?>
-                <li>
-                    <a href="/customer/menu.php?restaurant=<?= (int) $r['id'] ?>">
-                        <?= e($r['name']) ?>
-                    </a>
-                    <?php if (!empty($r['address'])): ?>
-                        — <?= e($r['address']) ?>
-                    <?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
-</body>
-</html>
+<?php if ($search !== ''): ?>
+    <p class="small text-muted">
+        <?= count($restaurants) ?> result<?= count($restaurants) === 1 ? '' : 's' ?> for “<?= e($search) ?>”
+    </p>
+<?php endif; ?>
+
+<?php if (!$restaurants): ?>
+    <div class="empty">
+        <p class="mb-1 fw-medium">
+            <?= $search !== '' ? 'Nothing matched that search.' : 'No kitchens listed yet.' ?>
+        </p>
+        <p class="small mb-0">
+            <?= $search !== '' ? 'Try a shorter word, or browse everything.' : 'Check back soon.' ?>
+        </p>
+    </div>
+<?php else: ?>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <?php foreach ($restaurants as $r): ?>
+            <div class="col">
+                <a href="/customer/menu.php?restaurant=<?= (int) $r['id'] ?>"
+                   class="text-decoration-none text-reset">
+                    <div class="card h-100 dish-card">
+                        <div class="card-body">
+                            <h2 class="h5 mb-1"><?= e($r['name']) ?></h2>
+                            <?php if (!empty($r['address'])): ?>
+                                <p class="small text-muted mb-2"><?= e($r['address']) ?></p>
+                            <?php endif; ?>
+                            <p class="small text-muted mb-3"><?= e($r['description'] ?? '') ?></p>
+                            <span class="badge bg-light text-dark border">
+                                <?= (int) $r['dish_count'] ?> dish<?= (int) $r['dish_count'] === 1 ? '' : 'es' ?>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

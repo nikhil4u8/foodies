@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
-requireLogin();
+requireRole('customer');
 
 $user = currentUser();
 $pdo  = getDatabaseConnection();
@@ -16,34 +16,52 @@ $stmt->execute([$user['id']]);
 $orders = $stmt->fetchAll();
 
 $itemStmt = $pdo->prepare('SELECT * FROM order_items WHERE order_id = ?');
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Your orders — Foodies</title>
-</head>
-<body>
-    <h1>Your orders</h1>
-    <p><a href="/customer/restaurants.php">Browse restaurants</a></p>
 
-    <?php if (!$orders): ?>
-        <p>You haven't placed any orders yet.</p>
-    <?php else: ?>
-        <?php foreach ($orders as $order): ?>
-            <?php $itemStmt->execute([$order['id']]); $items = $itemStmt->fetchAll(); ?>
-            <div style="border:1px solid #ccc; padding:10px; margin:10px 0">
-                <h3>Order #<?= (int) $order['id'] ?> — <?= e($order['restaurant_name']) ?></h3>
-                <p>Placed <?= e($order['placed_at']) ?> — status: <?= e($order['status']) ?></p>
-                <ul>
+$statusColours = [
+    'pending'   => 'secondary',
+    'confirmed' => 'info',
+    'preparing' => 'warning',
+    'delivered' => 'success',
+    'cancelled' => 'danger',
+];
+
+$pageTitle = 'Your orders';
+require_once __DIR__ . '/../includes/header.php';
+?>
+
+<h1 class="fw-bold mb-3">Your orders</h1>
+<p><a href="/customer/restaurants.php" class="btn btn-sm btn-outline-secondary">Browse restaurants</a></p>
+
+<?php if (!$orders): ?>
+    <div class="alert alert-info">You haven't placed any orders yet.</div>
+<?php else: ?>
+    <?php foreach ($orders as $order): ?>
+        <?php $itemStmt->execute([$order['id']]); $items = $itemStmt->fetchAll(); ?>
+        <div class="card bg-white mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <strong>Order #<?= (int) $order['id'] ?></strong>
+                    — <?= e($order['restaurant_name']) ?>
+                </span>
+                <span class="badge bg-<?= $statusColours[$order['status']] ?? 'secondary' ?>">
+                    <?= e($order['status']) ?>
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">Placed <?= e($order['placed_at']) ?></p>
+                <ul class="list-unstyled mb-2">
                     <?php foreach ($items as $item): ?>
-                        <li><?= e($item['item_name']) ?> × <?= (int) $item['quantity'] ?>
-                            — ₹<?= number_format((float) $item['unit_price'] * (int) $item['quantity'], 2) ?></li>
+                        <li>
+                            <?= e($item['item_name']) ?>
+                            <span class="text-muted">× <?= (int) $item['quantity'] ?></span>
+                            — ₹<?= number_format((float) $item['unit_price'] * (int) $item['quantity'], 2) ?>
+                        </li>
                     <?php endforeach; ?>
                 </ul>
-                <p><strong>Total: ₹<?= number_format((float) $order['total_amount'], 2) ?></strong></p>
+                <p class="fw-bold mb-0">Total: ₹<?= number_format((float) $order['total_amount'], 2) ?></p>
             </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-</body>
-</html>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>
